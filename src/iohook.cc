@@ -62,10 +62,10 @@ static void dispatch_proc(uiohook_event * const event)
 	}
 }
 
-// static bool logger_proc(unsigned int level, const char *format, ...)
-// {
-// 	return true;
-// }
+static bool logger_proc(unsigned int level, const char *format, ...)
+{
+	return true;
+}
 
 
 HookProcessWorker::HookProcessWorker(Nan::Callback * callback) :
@@ -77,7 +77,7 @@ fHookExecution(nullptr)
 
 void HookProcessWorker::Execute(const Nan::AsyncProgressWorkerBase<uiohook_event>::ExecutionProgress& progress)
 {
-	// hook_set_logger_proc(&logger_proc);
+	hook_set_logger_proc(&logger_proc);
 	hook_set_dispatch_proc(&dispatch_proc);
 	fHookExecution = &progress;
 	printf("\n\nhook_run\n\n");
