@@ -77,5 +77,10 @@ declare namespace LibUIOHookNode {
         direction?: number;
         rotation?: number;
         wheeltype?: number;
+
+        isShiftPressed?: boolean;
+        isCtrlPressed?: boolean;
+        isMetaPressed?: boolean;
+        isAltPressed?: boolean;
     }
 }

@@ -6,17 +6,7 @@ import { EventEmitter } from "events";
 
 const native = require("./iohook.node");
 
-export enum Events {
-    keypress = "keypress",
-    keydown = "keydown",
-    keyup = "keyup",
-    mouseclick = "mouseclick",
-    mousedown = "mousedown",
-    mouseup = "mouseup",
-    mousemove = "mousemove",
-    mousedrag = "mousedrag",
-    mousewheel = "mousewheel",
-}
+import { Events, KeyModifiersMasks } from "./enums";
 
 let EVENTS: Map<number, LibUIOHookNode.Events> = null;
 
@@ -95,8 +85,21 @@ export class IOHook extends EventEmitter {
 
         event = Object.assign({}, event, nativeEvent.mouse || nativeEvent.keyboard || nativeEvent.wheel);
 
+        this._decorateEventWithModifiers(event);
+
         this.emit(event.type, event);
 
+    }
+
+    private _decorateEventWithModifiers(event: LibUIOHookNode.IHookEvent) {
+        event.isShiftPressed = (event.mask & KeyModifiersMasks.Shift_L) === KeyModifiersMasks.Shift_L
+            || (event.mask & KeyModifiersMasks.Shift_R) === KeyModifiersMasks.Shift_R;
+        event.isCtrlPressed = (event.mask & KeyModifiersMasks.Ctrl_L) === KeyModifiersMasks.Ctrl_L
+            || (event.mask & KeyModifiersMasks.Ctrl_R) === KeyModifiersMasks.Ctrl_R;
+        event.isAltPressed = (event.mask & KeyModifiersMasks.Alt_L) === KeyModifiersMasks.Alt_L
+            || (event.mask & KeyModifiersMasks.Alt_R) === KeyModifiersMasks.Alt_R;
+        event.isMetaPressed = (event.mask & KeyModifiersMasks.Meta_L) === KeyModifiersMasks.Meta_L
+            || (event.mask & KeyModifiersMasks.Meta_R) === KeyModifiersMasks.Meta_R;
     }
 
 }
