@@ -1,0 +1,36 @@
+{
+    "exclude": [
+        "node_modules",
+        "./src/__test__"
+    ],
+    "include": [
+        "./src/**/*.ts",
+    ],
+    "compilerOptions": {
+        "outDir": "./lib",
+        "sourceMap": false,
+        "noImplicitAny": false,
+        "target": "es2017",
+        "module": "commonjs",
+        "noResolve": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": false,
+        "noImplicitReturns": true,
+        "allowUnusedLabels": false,
+        "allowUnreachableCode": false,
+        "alwaysStrict": false,
+        "noImplicitUseStrict": true,
+        "noImplicitThis": false,
+        "strictNullChecks": false,
+        "moduleResolution": "node",
+        "experimentalDecorators": true,
+        "lib": [
+            "dom",
+            "es2017",
+            "es2015",
+            "es2015.core",
+            "es2016.array.include"
+        ],
+        "strict": true
+    }
+}

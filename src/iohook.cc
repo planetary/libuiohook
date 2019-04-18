@@ -132,7 +132,7 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 		Nan::Set(wheel, Nan::New("clicks").ToLocalChecked(), Nan::New((int)data->data.wheel.clicks));
 		Nan::Set(wheel, Nan::New("direction").ToLocalChecked(), Nan::New((int)data->data.wheel.direction));
 		Nan::Set(wheel, Nan::New("rotation").ToLocalChecked(), Nan::New((int)data->data.wheel.rotation));
-		Nan::Set(wheel, Nan::New("type").ToLocalChecked(), Nan::New((int)data->data.wheel.type));
+		Nan::Set(wheel, Nan::New("wheeltype").ToLocalChecked(), Nan::New((int)data->data.wheel.type));
 		Nan::Set(wheel, Nan::New("x").ToLocalChecked(), Nan::New((int)data->data.wheel.x));
 		Nan::Set(wheel, Nan::New("y").ToLocalChecked(), Nan::New((int)data->data.wheel.y));
 

@@ -2,13 +2,17 @@
   "name": "libuiohook-node",
   "version": "0.1.0",
   "description": "NodeJS bindings for libuiohook",
-  "main": "lib/index.js",
+  "main": "index.js",
   "directories": {
     "man": "man",
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rebuild": "node-gyp rebuild",
+    "build": "node-gyp build",
+    "start": "npm run build && npm run typescript && node test.js",
+    "typescript": "tsc -p tsconfig.json || exit 0"
   },
   "repository": {
     "type": "git",
@@ -27,6 +31,7 @@
   },
   "homepage": "https://github.com/Rosga/libuiohook#readme",
   "devDependencies": {
+    "@types/node": "11.13.5",
     "nan": "2.13.2",
     "node-gyp": "3.8.0",
     "tslint": "5.16.0",
