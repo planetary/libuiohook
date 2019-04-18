@@ -160,8 +160,13 @@ void unregister_running_hooks() {
 }
 
 void hook_start_proc() {
+<<<<<<< HEAD
     // Get the local system time in UNIX epoch form.
     uint64_t timestamp = GetMessageTime();
+=======
+	// Get the local system time in UNIX epoch form.
+	uint64_t timestamp = GetTickCount64();
+>>>>>>> Fixed double click tracking for windows
 
     // Populate the hook start event.
     event.time = timestamp;
@@ -175,8 +180,13 @@ void hook_start_proc() {
 }
 
 void hook_stop_proc() {
+<<<<<<< HEAD
     // Get the local system time in UNIX epoch form.
     uint64_t timestamp = GetMessageTime();
+=======
+	// Get the local system time in UNIX epoch form.
+	uint64_t timestamp = GetTickCount64();
+>>>>>>> Fixed double click tracking for windows
 
     // Populate the hook stop event.
     event.time = timestamp;
@@ -313,6 +323,7 @@ LRESULT CALLBACK keyboard_hook_event_proc(int nCode, WPARAM wParam, LPARAM lPara
 
 
 static void process_button_pressed(MSLLHOOKSTRUCT *mshook, uint16_t button) {
+<<<<<<< HEAD
     uint64_t timestamp = mshook->time;
 
     // Track the number of clicks, the button must match the previous button.
@@ -357,6 +368,54 @@ static void process_button_pressed(MSLLHOOKSTRUCT *mshook, uint16_t button) {
 
     // Fire mouse pressed event.
     dispatch_event(&event);
+=======
+	uint64_t timestamp = GetTickCount64();
+
+	// Track the number of clicks, the button must match the previous button.
+	if (button == click_button && (long int) (timestamp - click_time) <= hook_get_multi_click_time()) {
+		if (click_count < USHRT_MAX) {
+			click_count++;
+		}
+		else {
+			logger(LOG_LEVEL_WARN, "%s [%u]: Click count overflow detected!\n",
+					__FUNCTION__, __LINE__);
+		}
+	}
+	else {
+		// Reset the click count.
+		click_count = 1;
+
+		// Set the previous button.
+		click_button = button;
+	}
+
+	// Save this events time to calculate the click_count.
+	click_time = timestamp;
+
+	// Store the last click point.
+	last_click.x = mshook->pt.x;
+	last_click.y = mshook->pt.y;
+
+	// Populate mouse pressed event.
+	event.time = timestamp;
+	event.reserved = 0x00;
+
+	event.type = EVENT_MOUSE_PRESSED;
+	event.mask = get_modifiers();
+
+	event.data.mouse.button = button;
+	event.data.mouse.clicks = click_count;
+
+	event.data.mouse.x = mshook->pt.x;
+	event.data.mouse.y = mshook->pt.y;
+
+	logger(LOG_LEVEL_INFO, "%s [%u]: Button %u  pressed %u time(s). (%u, %u)\n",
+			__FUNCTION__, __LINE__, event.data.mouse.button, event.data.mouse.clicks,
+			event.data.mouse.x, event.data.mouse.y);
+
+	// Fire mouse pressed event.
+	dispatch_event(&event);
+>>>>>>> Fixed double click tracking for windows
 }
 
 static void process_button_released(MSLLHOOKSTRUCT *mshook, uint16_t button) {
@@ -411,6 +470,7 @@ static void process_button_released(MSLLHOOKSTRUCT *mshook, uint16_t button) {
 }
 
 static void process_mouse_moved(MSLLHOOKSTRUCT *mshook) {
+<<<<<<< HEAD
     uint64_t timestamp = mshook->time;
 
     // We received a mouse move event with the mouse actually moving.
@@ -449,6 +509,47 @@ static void process_mouse_moved(MSLLHOOKSTRUCT *mshook) {
         // Fire mouse move event.
         dispatch_event(&event);
     }
+=======
+	uint64_t timestamp = GetTickCount64();
+
+	// We received a mouse move event with the mouse actually moving.
+	// This verifies that the mouse was moved after being depressed.
+	if (last_click.x != mshook->pt.x || last_click.y != mshook->pt.y) {
+		// Reset the click count.
+		if (click_count != 0 && (long) (timestamp - click_time) > hook_get_multi_click_time()) {
+			click_count = 0;
+		}
+
+		// Populate mouse move event.
+		event.time = timestamp;
+		event.reserved = 0x00;
+
+		event.mask = get_modifiers();
+
+		// Check the modifier mask range for MASK_BUTTON1 - 5.
+		bool mouse_dragged = event.mask & (MASK_BUTTON1 | MASK_BUTTON2 | MASK_BUTTON3 | MASK_BUTTON4 | MASK_BUTTON5);
+		if (mouse_dragged) {
+			// Create Mouse Dragged event.
+			event.type = EVENT_MOUSE_DRAGGED;
+		}
+		else {
+			// Create a Mouse Moved event.
+			event.type = EVENT_MOUSE_MOVED;
+		}
+
+		event.data.mouse.button = MOUSE_NOBUTTON;
+		event.data.mouse.clicks = click_count;
+		event.data.mouse.x = mshook->pt.x;
+		event.data.mouse.y = mshook->pt.y;
+
+		logger(LOG_LEVEL_INFO, "%s [%u]: Mouse %s to %u, %u.\n",
+				__FUNCTION__, __LINE__,  mouse_dragged ? "dragged" : "moved",
+				event.data.mouse.x, event.data.mouse.y);
+
+		// Fire mouse move event.
+		dispatch_event(&event);
+	}
+>>>>>>> Fixed double click tracking for windows
 }
 
 static void process_mouse_wheel(MSLLHOOKSTRUCT *mshook, uint8_t direction) {
