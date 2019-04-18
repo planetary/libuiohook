@@ -30,7 +30,6 @@
 // Thread and hook handles.
 static DWORD hook_thread_id = 0;
 static HHOOK keyboard_event_hhook = NULL, mouse_event_hhook = NULL;
-static HWINEVENTHOOK win_event_hhook = NULL;
 
 // The handle to the DLL module pulled in DllMain on DLL_PROCESS_ATTACH.
 extern HINSTANCE hInst;
@@ -147,22 +146,17 @@ static unsigned short int get_scroll_wheel_amount() {
 }
 
 void unregister_running_hooks() {
-    // Stop the event hook and any timer still running.
-    if (win_event_hhook != NULL) {
-        UnhookWinEvent(win_event_hhook);
-        win_event_hhook = NULL;
-    }
 
-    // Destroy the native hooks.
-    if (keyboard_event_hhook != NULL) {
-        UnhookWindowsHookEx(keyboard_event_hhook);
-        keyboard_event_hhook = NULL;
-    }
+	// Destroy the native hooks.
+	if (keyboard_event_hhook != NULL) {
+		UnhookWindowsHookEx(keyboard_event_hhook);
+		keyboard_event_hhook = NULL;
+	}
 
-    if (mouse_event_hhook != NULL) {
-        UnhookWindowsHookEx(mouse_event_hhook);
-        mouse_event_hhook = NULL;
-    }
+	if (mouse_event_hhook != NULL) {
+		UnhookWindowsHookEx(mouse_event_hhook);
+		mouse_event_hhook = NULL;
+	}
 }
 
 void hook_start_proc() {
@@ -612,46 +606,6 @@ LRESULT CALLBACK mouse_hook_event_proc(int nCode, WPARAM wParam, LPARAM lParam) 
 }
 
 
-// Callback function that handles events.
-void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
-    switch (event) {
-        case EVENT_OBJECT_NAMECHANGE:
-            logger(LOG_LEVEL_INFO, "%s [%u]: Restarting Windows input hook on window event: %#X.\n",
-                    __FUNCTION__, __LINE__, event);
-
-            // Remove any keyboard or mouse hooks that are still running.
-            if (keyboard_event_hhook != NULL) {
-                UnhookWindowsHookEx(keyboard_event_hhook);
-            }
-
-            if (mouse_event_hhook != NULL) {
-                UnhookWindowsHookEx(mouse_event_hhook);
-            }
-
-            // Restart the event hooks.
-            keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
-            mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
-
-            // Re-initialize modifier masks.
-            initialize_modifiers();
-
-            // FIXME We should compare the modifier mask before and after the restart
-            // to determine if we should synthesize missing events.
-
-            // Check for event hook error.
-            if (keyboard_event_hhook == NULL || mouse_event_hhook == NULL) {
-                logger(LOG_LEVEL_ERROR, "%s [%u]: SetWindowsHookEx() failed! (%#lX)\n",
-                        __FUNCTION__, __LINE__, (unsigned long) GetLastError());
-            }
-            break;
-
-        default:
-            logger(LOG_LEVEL_INFO, "%s [%u]: Unhandled Windows window event: %#X.\n",
-                    __FUNCTION__, __LINE__, event);
-    }
-}
-
-
 UIOHOOK_API int hook_run() {
     int status = UIOHOOK_FAILURE;
 
@@ -668,68 +622,57 @@ UIOHOOK_API int hook_run() {
         if (hInst != NULL) {
             // Initialize native input helper functions.
             load_input_helper();
-        } else {
-            logger(LOG_LEVEL_ERROR, "%s [%u]: Could not determine hInst for SetWindowsHookEx()! (%#lX)\n",
-                    __FUNCTION__, __LINE__, (unsigned long) GetLastError());
+		}
+		else {
+			logger(LOG_LEVEL_ERROR,	"%s [%u]: Could not determine hInst for SetWindowsHookEx()! (%#lX)\n",
+					__FUNCTION__, __LINE__, (unsigned long) GetLastError());
 
-            status = UIOHOOK_ERROR_GET_MODULE_HANDLE;
-        }
-    }
+			status = UIOHOOK_ERROR_GET_MODULE_HANDLE;
+		}
+	}
 
-    // Create the native hooks.
-    keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
-    mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
+	// Create the native hooks.
+	keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
+	mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
 
-    // Create a window event hook to listen for capture change.
-    win_event_hhook = SetWinEventHook(
-            EVENT_OBJECT_NAMECHANGE, EVENT_OBJECT_NAMECHANGE,
-            NULL,
-            win_hook_event_proc,
-            0, 0,
-            WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+	// If we did not encounter a problem, start processing events.
+	if (keyboard_event_hhook != NULL && mouse_event_hhook != NULL) {
+		logger(LOG_LEVEL_DEBUG,	"%s [%u]: SetWindowsHookEx() successful.\n",
+				__FUNCTION__, __LINE__);
 
-    // If we did not encounter a problem, start processing events.
-    if (keyboard_event_hhook != NULL && mouse_event_hhook != NULL) {
-        if (win_event_hhook == NULL) {
-            logger(LOG_LEVEL_WARN, "%s [%u]: SetWinEventHook() failed!\n",
-                    __FUNCTION__, __LINE__);
-        }
+		// Check and setup modifiers.
+		initialize_modifiers();
 
-        logger(LOG_LEVEL_DEBUG, "%s [%u]: SetWindowsHookEx() successful.\n",
-                __FUNCTION__, __LINE__);
+		// Set the exit status.
+		status = UIOHOOK_SUCCESS;
 
-        // Check and setup modifiers.
-        initialize_modifiers();
+		// Windows does not have a hook start event or callback so we need to
+		// manually fake it.
+		hook_start_proc();
 
-        // Set the exit status.
-        status = UIOHOOK_SUCCESS;
+		// Block until the thread receives an WM_QUIT request.
+		MSG message;
+		while (GetMessage(&message, (HWND) NULL, 0, 0) > 0) {
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+	}
+	else {
+		logger(LOG_LEVEL_ERROR,	"%s [%u]: SetWindowsHookEx() failed! (%#lX)\n",
+				__FUNCTION__, __LINE__, (unsigned long) GetLastError());
 
-        // Windows does not have a hook start event or callback so we need to
-        // manually fake it.
-        hook_start_proc();
+		status = UIOHOOK_ERROR_SET_WINDOWS_HOOK_EX;
+	}
+	
+	
+	// Unregister any hooks that may still be installed.
+	unregister_running_hooks();
 
-        // Block until the thread receives an WM_QUIT request.
-        MSG message;
-        while (GetMessage(&message, (HWND) NULL, 0, 0) > 0) {
-            TranslateMessage(&message);
-            DispatchMessage(&message);
-        }
-    } else {
-        logger(LOG_LEVEL_ERROR, "%s [%u]: SetWindowsHookEx() failed! (%#lX)\n",
-                __FUNCTION__, __LINE__, (unsigned long) GetLastError());
+	// We must explicitly call the cleanup handler because Windows does not
+	// provide a thread cleanup method like POSIX pthread_cleanup_push/pop.
+	hook_stop_proc();
 
-        status = UIOHOOK_ERROR_SET_WINDOWS_HOOK_EX;
-    }
-
-
-    // Unregister any hooks that may still be installed.
-    unregister_running_hooks();
-
-    // We must explicitly call the cleanup handler because Windows does not
-    // provide a thread cleanup method like POSIX pthread_cleanup_push/pop.
-    hook_stop_proc();
-
-    return status;
+	return status;
 }
 
 UIOHOOK_API int hook_stop() {
