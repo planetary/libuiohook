@@ -68,7 +68,7 @@ TISMessage *tis_message;
 #if __MAC_OS_X_VERSION_MAX_ALLOWED <= 1050
 typedef void* dispatch_queue_t;
 #endif
-static struct dispatch_queue_s *dispatch_main_queue_s;
+static dispatch_queue_t (*dispatch_get_main_queue_f)();
 static void (*dispatch_sync_f_f)(dispatch_queue_t, void *, void (*function)(void *));
 
 #if ! defined(USE_CARBON_LEGACY) && defined(USE_COREFOUNDATION)
@@ -376,9 +376,9 @@ static inline void process_key_pressed(uint64_t timestamp, CGEventRef event_ref)
 		tis_message->length = 0;
 		bool is_runloop_main = CFEqual(event_loop, CFRunLoopGetMain());
 		
-		if (dispatch_sync_f_f != NULL && dispatch_main_queue_s != NULL && !is_runloop_main) {
-			logger(LOG_LEVEL_DEBUG,	"%s [%u]: Using dispatch_sync_f for key typed events.\n", __FUNCTION__, __LINE__);
-			(*dispatch_sync_f_f)(dispatch_main_queue_s, tis_message, &keycode_to_lookup);
+		if (dispatch_sync_f_f != NULL && dispatch_get_main_queue_f != NULL && !is_runloop_main) {
+			logger(LOG_LEVEL_DEBUG,	"%s [%u]: Using *dispatch_sync_f_f for key typed events.\n", __FUNCTION__, __LINE__);
+			(*dispatch_sync_f_f)((*dispatch_get_main_queue_f)(), tis_message, &keycode_to_lookup);
 		}
 		#if ! defined(USE_CARBON_LEGACY) && defined(USE_COREFOUNDATION)
 		else if (! is_runloop_main) {
@@ -1012,14 +1012,14 @@ UIOHOOK_API int hook_run() {
 										// This is load is equivalent to calling dispatch_get_main_queue().  We use
 										// _dispatch_main_q because dispatch_get_main_queue is not exported from
 										// libdispatch.dylib and the function only dereferences the pointer.
-										dispatch_main_queue_s = (struct dispatch_queue_s *) dlsym(RTLD_DEFAULT, "_dispatch_main_q");
+										*(void **) (&dispatch_get_main_queue_f) = dlsym(RTLD_DEFAULT, "dispatch_get_main_queue");
 										dlError = dlerror();
 										if (dlError != NULL) {
 											logger(LOG_LEVEL_DEBUG,	"%s [%u]: %s.\n",
 													__FUNCTION__, __LINE__, dlError);
 										}
 										
-										if (dispatch_sync_f_f == NULL || dispatch_main_queue_s == NULL) {
+										if (dispatch_sync_f_f == NULL || dispatch_get_main_queue_f == NULL) {
 											logger(LOG_LEVEL_DEBUG, "%s [%u]: Failed to locate dispatch_sync_f() or dispatch_get_main_queue()!\n",
 													__FUNCTION__, __LINE__);
 
@@ -1068,7 +1068,7 @@ UIOHOOK_API int hook_run() {
 									
 									#if ! defined(USE_CARBON_LEGACY) && defined(USE_COREFOUNDATION)
 									if (! CFEqual(event_loop, CFRunLoopGetMain())) {
-										if (dispatch_sync_f_f == NULL || dispatch_main_queue_s == NULL) {
+										if (dispatch_sync_f_f == NULL || dispatch_get_main_queue_f == NULL) {
 											stop_message_port_runloop();
 										}
 									}

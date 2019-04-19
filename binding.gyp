@@ -29,7 +29,7 @@
             
             'conditions': [
                 ['OS == "mac"', {
-                    'defines': ['USE_IOKIT', 'USE_COREFOUNDATION'],
+                    'defines': ['USE_IOKIT=1', 'USE_COREFOUNDATION=1', 'USE_OBJC=1', '__MAC_OS_X_VERSION_MAX_ALLOWED=101000'],
                     'xcode_settings': {
                         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
                         },
