@@ -1,6 +1,8 @@
 
 declare module "libuiohook-node" {
 
+    import { EventEmitter } from "events";
+
     export enum Events {
         keypress = "keypress",
         keydown = "keydown",
@@ -11,6 +13,14 @@ declare module "libuiohook-node" {
         mousemove = "mousemove",
         mousedrag = "mousedrag",
         mousewheel = "mousewheel",
+    }
+
+    export class IOHook extends EventEmitter {
+        constructor();
+
+        start();
+        stop();
+        pause();
     }
 
 }
