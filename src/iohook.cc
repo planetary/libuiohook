@@ -141,6 +141,16 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 
 		callback->Call(1, argv, &resource);
 	} else if (data->type >= EVENT_FOREGROUND_CHANGED && data->type <= EVENT_FOREGROUND_LOCATION_CHANGED) {
+
+		v8::Local<v8::Object> bounds = Nan::New<v8::Object>();
+
+		Nan::Set(bounds, Nan::New("x").ToLocalChecked(), Nan::New((int)data->data.window.x));
+		Nan::Set(bounds, Nan::New("y").ToLocalChecked(), Nan::New((int)data->data.window.y));
+		Nan::Set(bounds, Nan::New("width").ToLocalChecked(), Nan::New((int)data->data.window.width));
+		Nan::Set(bounds, Nan::New("height").ToLocalChecked(), Nan::New((int)data->data.window.height));
+
+		Nan::Set(obj, Nan::New("bounds").ToLocalChecked(), bounds);
+
 		v8::Local<v8::Value> argv[] = { obj };
 		callback->Call(1, argv, &resource);
 	}

@@ -123,6 +123,14 @@ typedef struct _mouse_wheel_event_data
     uint8_t direction;
 } mouse_wheel_event_data;
 
+typedef struct _foreground_window_event_data
+{
+    int16_t x;
+    int16_t y;
+    int16_t width;
+    int16_t height;
+} foreground_window_event_data;
+
 typedef struct _uiohook_event
 {
     event_type type;
@@ -133,6 +141,7 @@ typedef struct _uiohook_event
         keyboard_event_data keyboard;
         mouse_event_data mouse;
         mouse_wheel_event_data wheel;
+        foreground_window_event_data window;
     } data;
 } uiohook_event;
 
