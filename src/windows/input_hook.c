@@ -30,6 +30,7 @@
 // Thread and hook handles.
 static DWORD hook_thread_id = 0;
 static HHOOK keyboard_event_hhook = NULL, mouse_event_hhook = NULL;
+static HWINEVENTHOOK win_event_hhook = NULL;
 
 // The handle to the DLL module pulled in DllMain on DLL_PROCESS_ATTACH.
 extern HINSTANCE hInst;
@@ -45,6 +46,7 @@ static POINT last_click;
 
 // Static event memory.
 static uiohook_event event;
+static uiohook_event window_event;
 
 // Event dispatch callback.
 static dispatcher_t dispatcher = NULL;
@@ -146,6 +148,12 @@ static unsigned short int get_scroll_wheel_amount() {
 }
 
 void unregister_running_hooks() {
+
+	// Stop the event hook and any timer still running.
+	if (win_event_hhook != NULL) {
+		UnhookWinEvent(win_event_hhook);
+		win_event_hhook = NULL;
+	}
 
 	// Destroy the native hooks.
 	if (keyboard_event_hhook != NULL) {
@@ -608,6 +616,50 @@ LRESULT CALLBACK mouse_hook_event_proc(int nCode, WPARAM wParam, LPARAM lParam) 
     return hook_result;
 }
 
+// Callback function that handles events.
+void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+
+	DWORD window_thread_id = 0;
+	HRESULT hr;
+	char *appName = "";
+
+	switch (event) {
+		case EVENT_OBJECT_LOCATIONCHANGE:
+			if (idObject != OBJID_WINDOW)
+				break;
+
+			if (hWnd == NULL)
+				break;
+
+			if (hWnd == GetForegroundWindow()) {
+				window_event.type = EVENT_FOREGROUND_LOCATION_CHANGED;
+				window_event.time = dwmsEventTime;
+				window_event.reserved = 0x00;
+				dispatch_event(&window_event);
+			}
+
+			break;
+		case EVENT_SYSTEM_FOREGROUND:
+			logger(LOG_LEVEL_INFO, "%s [%u]: Restarting Windows input hook on window event: %#X.\n",
+					__FUNCTION__, __LINE__, event);
+
+			printf("FOREGROUND_WINDOW_CHANGED \n");
+
+			if (hWnd == NULL) break;
+
+			window_event.type = EVENT_FOREGROUND_CHANGED;
+			window_event.time = dwmsEventTime;
+			window_event.reserved = 0x00;
+			dispatch_event(&window_event);
+			break;
+			
+		default:
+			logger(LOG_LEVEL_INFO, "%s [%u]: Unhandled Windows window event: %#X.\n",
+					__FUNCTION__, __LINE__, event);
+	}
+}
+
+
 
 UIOHOOK_API int hook_run() {
     int status = UIOHOOK_FAILURE;
@@ -637,11 +689,25 @@ UIOHOOK_API int hook_run() {
 	// Create the native hooks.
 	keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
 	mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
+	win_event_hhook = SetWinEventHook(
+			EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_LOCATIONCHANGE, 
+			NULL, 
+			win_hook_event_proc, 
+			0, 0, 
+			WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
 
 	// If we did not encounter a problem, start processing events.
 	if (keyboard_event_hhook != NULL && mouse_event_hhook != NULL) {
+		if (win_event_hhook == NULL) {
+			logger(LOG_LEVEL_WARN,	"%s [%u]: SetWinEventHook() failed!\n",
+					__FUNCTION__, __LINE__);
+			printf("SetWinEventHook() failed \n");
+		}
+
 		logger(LOG_LEVEL_DEBUG,	"%s [%u]: SetWindowsHookEx() successful.\n",
 				__FUNCTION__, __LINE__);
+
+		printf("SetWindowsHookEx() succeed \n");
 
 		// Check and setup modifiers.
 		initialize_modifiers();

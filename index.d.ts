@@ -37,6 +37,9 @@ declare namespace LibUIOHookNode {
         mousemove = "mousemove",
         mousedrag = "mousedrag",
         mousewheel = "mousewheel",
+
+        foreground_changed = "foreground_changed",
+        foreground_changed_location = "foreground_changed_location",
     }
 
     export interface INativeEventMouse {

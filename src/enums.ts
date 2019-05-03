@@ -9,6 +9,9 @@ export enum Events {
     mousemove = "mousemove",
     mousedrag = "mousedrag",
     mousewheel = "mousewheel",
+
+    foreground_changed = "foreground_changed",
+    foreground_changed_location = "foreground_changed_location",
 }
 
 export enum KeyModifiersMasks {

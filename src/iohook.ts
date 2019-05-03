@@ -24,6 +24,8 @@ function initEvents() {
     EVENTS.set(9, Events.mousemove);
     EVENTS.set(10, Events.mousedrag);
     EVENTS.set(11, Events.mousewheel);
+    EVENTS.set(12, Events.foreground_changed);
+    EVENTS.set(13, Events.foreground_changed_location);
 }
 
 
