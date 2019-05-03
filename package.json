@@ -1,6 +1,6 @@
 {
   "name": "libuiohook-node",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "description": "NodeJS bindings for libuiohook",
   "main": "index.js",
   "directories": {
@@ -37,5 +37,22 @@
     "node-gyp": "3.8.0",
     "tslint": "5.16.0",
     "typescript": "3.4.3"
-  }
+  },
+  "files": [
+    "/lib/**/*.js",
+    "/src",
+    "/pc",
+    "/include",
+    "/m4",
+    "/man",
+    "AUTHORS",
+    "COPYING.LESSER.md",
+    "COPYING.md",
+    "index.d.ts",
+    "package.json",
+    "README.md",
+    "binding.gyp",
+    "bootstrap.sh",
+    "configure.ac"
+  ]
 }
