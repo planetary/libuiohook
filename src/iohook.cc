@@ -151,6 +151,8 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 
 		Nan::Set(obj, Nan::New("bounds").ToLocalChecked(), bounds);
 
+		Nan::Set(obj, Nan::New("applicationName").ToLocalChecked(), Nan::New(data->data.window.applicationName).ToLocalChecked());
+
 		v8::Local<v8::Value> argv[] = { obj };
 		callback->Call(1, argv, &resource);
 	}

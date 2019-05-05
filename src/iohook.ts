@@ -87,6 +87,7 @@ export class IOHook extends EventEmitter {
 
         if (nativeEvent.type >= 12 && nativeEvent.type <= 13 ) { // 12-13 - foreground window events
             event.bounds = nativeEvent.bounds;
+            event.applicationName = nativeEvent.applicationName;
         }
         else {
             event = Object.assign({}, event, nativeEvent.mouse || nativeEvent.keyboard || nativeEvent.wheel);

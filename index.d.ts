@@ -75,6 +75,7 @@ declare namespace LibUIOHookNode {
         keyboard?: INativeEventKeyboard;
         wheel?: INativeEventWheel;
         bounds?: IRect;
+        applicationName?: string;
     }
 
     export interface IHookEvent {
@@ -101,6 +102,7 @@ declare namespace LibUIOHookNode {
         isAltPressed?: boolean;
 
         bounds?: IRect;
+        applicationName?: string;
     }
 
     interface IRect {

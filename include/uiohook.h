@@ -129,6 +129,7 @@ typedef struct _foreground_window_event_data
     int16_t y;
     int16_t width;
     int16_t height;
+    char *applicationName;
 } foreground_window_event_data;
 
 typedef struct _uiohook_event

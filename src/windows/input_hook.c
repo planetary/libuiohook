@@ -636,6 +636,28 @@ void populate_win_event_with_window_bounds(HWND window) {
 
 }
 
+char * get_app_name_by_process_id(DWORD dwProcId) {
+	char * appName = malloc(sizeof(char) * MAX_PATH);
+
+	DWORD dw = MAX_PATH;
+
+	HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwProcId);
+	QueryFullProcessImageNameA(hProc, 0, appName, &dw);
+	CloseHandle(hProc);
+
+	return appName;
+}
+
+char * get_application_name(HWND windowHandle) {
+
+	DWORD dwProcId = 0;
+	GetWindowThreadProcessId(windowHandle, &dwProcId);
+
+	return get_app_name_by_process_id(dwProcId);
+
+}
+
+
 // Callback function that handles events.
 void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
 
@@ -657,24 +679,22 @@ void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LO
 				window_event.reserved = 0x00;
 
 				populate_win_event_with_window_bounds(hWnd);
+				window_event.data.window.applicationName = get_application_name(hWnd);
 				
 				dispatch_event(&window_event);
 			}
 
 			break;
 		case EVENT_SYSTEM_FOREGROUND:
-			logger(LOG_LEVEL_INFO, "%s [%u]: Restarting Windows input hook on window event: %#X.\n",
-					__FUNCTION__, __LINE__, event);
-
-			printf("FOREGROUND_WINDOW_CHANGED \n");
-
-			if (hWnd == NULL) break;
+			if (hWnd == NULL) 
+				break;
 
 			window_event.type = EVENT_FOREGROUND_CHANGED;
 			window_event.time = dwmsEventTime;
 			window_event.reserved = 0x00;
 
 			populate_win_event_with_window_bounds(hWnd);
+			window_event.data.window.applicationName = get_application_name(hWnd);
 
 			dispatch_event(&window_event);
 			break;
