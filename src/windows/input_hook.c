@@ -44,6 +44,9 @@ static DWORD click_time = 0;
 static unsigned short int click_button = MOUSE_NOBUTTON;
 static POINT last_click;
 
+static DWORD last_key_pressed_time = 0;
+static DWORD last_key_released_time = 0;
+
 // Static event memory.
 static uiohook_event event;
 static uiohook_event window_event;
@@ -198,94 +201,108 @@ void hook_stop_proc() {
 }
 
 static void process_key_pressed(KBDLLHOOKSTRUCT *kbhook) {
-    // Check and setup modifiers.
-    if      (kbhook->vkCode == VK_LSHIFT)   { set_modifier_mask(MASK_SHIFT_L);     }
-    else if (kbhook->vkCode == VK_RSHIFT)   { set_modifier_mask(MASK_SHIFT_R);     }
-    else if (kbhook->vkCode == VK_LCONTROL) { set_modifier_mask(MASK_CTRL_L);      }
-    else if (kbhook->vkCode == VK_RCONTROL) { set_modifier_mask(MASK_CTRL_R);      }
-    else if (kbhook->vkCode == VK_LMENU)    { set_modifier_mask(MASK_ALT_L);       }
-    else if (kbhook->vkCode == VK_RMENU)    { set_modifier_mask(MASK_ALT_R);       }
-    else if (kbhook->vkCode == VK_LWIN)     { set_modifier_mask(MASK_META_L);      }
-    else if (kbhook->vkCode == VK_RWIN)     { set_modifier_mask(MASK_META_R);      }
-    else if (kbhook->vkCode == VK_NUMLOCK)  { set_modifier_mask(MASK_NUM_LOCK);    }
-    else if (kbhook->vkCode == VK_CAPITAL)  { set_modifier_mask(MASK_CAPS_LOCK);   }
-    else if (kbhook->vkCode == VK_SCROLL)   { set_modifier_mask(MASK_SCROLL_LOCK); }
 
-    // Populate key pressed event.
-    event.time = kbhook->time;
-    event.reserved = 0x00;
+	if (last_key_pressed_time == kbhook->time) {
+		return;
+	}
 
-    event.type = EVENT_KEY_PRESSED;
-    event.mask = get_modifiers();
+	last_key_pressed_time = kbhook->time;
 
-    event.data.keyboard.keycode = keycode_to_scancode(kbhook->vkCode, kbhook->flags);
-    event.data.keyboard.rawcode = kbhook->vkCode;
-    event.data.keyboard.keychar = CHAR_UNDEFINED;
+	// Check and setup modifiers.
+	if		(kbhook->vkCode == VK_LSHIFT)	{ set_modifier_mask(MASK_SHIFT_L);		}
+	else if (kbhook->vkCode == VK_RSHIFT)	{ set_modifier_mask(MASK_SHIFT_R);		}
+	else if (kbhook->vkCode == VK_LCONTROL)	{ set_modifier_mask(MASK_CTRL_L);		}
+	else if (kbhook->vkCode == VK_RCONTROL)	{ set_modifier_mask(MASK_CTRL_R);		}
+	else if (kbhook->vkCode == VK_LMENU)	{ set_modifier_mask(MASK_ALT_L);		}
+	else if (kbhook->vkCode == VK_RMENU)	{ set_modifier_mask(MASK_ALT_R);		}
+	else if (kbhook->vkCode == VK_LWIN)		{ set_modifier_mask(MASK_META_L);		}
+	else if (kbhook->vkCode == VK_RWIN)		{ set_modifier_mask(MASK_META_R);		}
+	else if (kbhook->vkCode == VK_NUMLOCK)	{ set_modifier_mask(MASK_NUM_LOCK);		}
+	else if (kbhook->vkCode == VK_CAPITAL)	{ set_modifier_mask(MASK_CAPS_LOCK);	}
+	else if (kbhook->vkCode == VK_SCROLL)	{ set_modifier_mask(MASK_SCROLL_LOCK);	}
 
-    logger(LOG_LEVEL_INFO, "%s [%u]: Key %#X pressed. (%#X)\n",
-            __FUNCTION__, __LINE__, event.data.keyboard.keycode, event.data.keyboard.rawcode);
+	// Populate key pressed event.
+	event.time = kbhook->time;
+	event.reserved = 0x00;
 
-    // Populate key pressed event.
-    dispatch_event(&event);
+	event.type = EVENT_KEY_PRESSED;
+	event.mask = get_modifiers();
 
-    // If the pressed event was not consumed...
-    if (event.reserved ^ 0x01) {
-        // Buffer for unicode typed chars. No more than 2 needed.
-        WCHAR buffer[2]; // = { WCH_NONE };
+	event.data.keyboard.keycode = keycode_to_scancode(kbhook->vkCode, kbhook->flags);
+	event.data.keyboard.rawcode = kbhook->vkCode;
+	event.data.keyboard.keychar = CHAR_UNDEFINED;
 
-        // If the pressed event was not consumed and a unicode char exists...
-        SIZE_T count = keycode_to_unicode(kbhook->vkCode, buffer, sizeof(buffer));
-        for (unsigned int i = 0; i < count; i++) {
-            // Populate key typed event.
-            event.time = kbhook->time;
-            event.reserved = 0x00;
+	logger(LOG_LEVEL_INFO,	"%s [%u]: Key %#X pressed. (%#X)\n",
+			__FUNCTION__, __LINE__, event.data.keyboard.keycode, event.data.keyboard.rawcode);
 
-            event.type = EVENT_KEY_TYPED;
-            event.mask = get_modifiers();
+	// Populate key pressed event.
+	dispatch_event(&event);
 
-            event.data.keyboard.keycode = VC_UNDEFINED;
-            event.data.keyboard.rawcode = kbhook->vkCode;
-            event.data.keyboard.keychar = buffer[i];
+	// If the pressed event was not consumed...
+	if (event.reserved ^ 0x01) {
+		// Buffer for unicode typed chars. No more than 2 needed.
+		WCHAR buffer[2]; // = { WCH_NONE };
 
-            logger(LOG_LEVEL_INFO, "%s [%u]: Key %#X typed. (%lc)\n",
-                    __FUNCTION__, __LINE__, event.data.keyboard.keycode, (wint_t) event.data.keyboard.keychar);
+		// If the pressed event was not consumed and a unicode char exists...
+		SIZE_T count = keycode_to_unicode(kbhook->vkCode, buffer, sizeof(buffer));
+		for (unsigned int i = 0; i < count; i++) {
+			// Populate key typed event.
+			event.time = kbhook->time;
+			event.reserved = 0x00;
 
-            // Fire key typed event.
-            dispatch_event(&event);
-        }
-    }
+			event.type = EVENT_KEY_TYPED;
+			event.mask = get_modifiers();
+
+			event.data.keyboard.keycode = VC_UNDEFINED;
+			event.data.keyboard.rawcode = kbhook->vkCode;
+			event.data.keyboard.keychar = buffer[i];
+
+			logger(LOG_LEVEL_INFO, "%s [%u]: Key %#X typed. (%lc)\n",
+					__FUNCTION__, __LINE__, event.data.keyboard.keycode, (wint_t) event.data.keyboard.keychar);
+
+			// Fire key typed event.
+			dispatch_event(&event);
+		}
+	}
 }
 
 static void process_key_released(KBDLLHOOKSTRUCT *kbhook) {
-    // Check and setup modifiers.
-    if      (kbhook->vkCode == VK_LSHIFT)   { unset_modifier_mask(MASK_SHIFT_L);     }
-    else if (kbhook->vkCode == VK_RSHIFT)   { unset_modifier_mask(MASK_SHIFT_R);     }
-    else if (kbhook->vkCode == VK_LCONTROL) { unset_modifier_mask(MASK_CTRL_L);      }
-    else if (kbhook->vkCode == VK_RCONTROL) { unset_modifier_mask(MASK_CTRL_R);      }
-    else if (kbhook->vkCode == VK_LMENU)    { unset_modifier_mask(MASK_ALT_L);       }
-    else if (kbhook->vkCode == VK_RMENU)    { unset_modifier_mask(MASK_ALT_R);       }
-    else if (kbhook->vkCode == VK_LWIN)     { unset_modifier_mask(MASK_META_L);      }
-    else if (kbhook->vkCode == VK_RWIN)     { unset_modifier_mask(MASK_META_R);      }
-    else if (kbhook->vkCode == VK_NUMLOCK)  { unset_modifier_mask(MASK_NUM_LOCK);    }
-    else if (kbhook->vkCode == VK_CAPITAL)  { unset_modifier_mask(MASK_CAPS_LOCK);   }
-    else if (kbhook->vkCode == VK_SCROLL)   { unset_modifier_mask(MASK_SCROLL_LOCK); }
 
-    // Populate key pressed event.
-    event.time = kbhook->time;
-    event.reserved = 0x00;
+	if (last_key_released_time == kbhook->time) {
+		return;
+	}
 
-    event.type = EVENT_KEY_RELEASED;
-    event.mask = get_modifiers();
+	last_key_released_time = kbhook->time;
 
-    event.data.keyboard.keycode = keycode_to_scancode(kbhook->vkCode, kbhook->flags);
-    event.data.keyboard.rawcode = kbhook->vkCode;
-    event.data.keyboard.keychar = CHAR_UNDEFINED;
+	// Check and setup modifiers.
+	if		(kbhook->vkCode == VK_LSHIFT)	{ unset_modifier_mask(MASK_SHIFT_L);		}
+	else if (kbhook->vkCode == VK_RSHIFT)	{ unset_modifier_mask(MASK_SHIFT_R);		}
+	else if (kbhook->vkCode == VK_LCONTROL)	{ unset_modifier_mask(MASK_CTRL_L);			}
+	else if (kbhook->vkCode == VK_RCONTROL)	{ unset_modifier_mask(MASK_CTRL_R);			}
+	else if (kbhook->vkCode == VK_LMENU)	{ unset_modifier_mask(MASK_ALT_L);			}
+	else if (kbhook->vkCode == VK_RMENU)	{ unset_modifier_mask(MASK_ALT_R);			}
+	else if (kbhook->vkCode == VK_LWIN)		{ unset_modifier_mask(MASK_META_L);			}
+	else if (kbhook->vkCode == VK_RWIN)		{ unset_modifier_mask(MASK_META_R);			}
+	else if (kbhook->vkCode == VK_NUMLOCK)	{ unset_modifier_mask(MASK_NUM_LOCK);		}
+	else if (kbhook->vkCode == VK_CAPITAL)	{ unset_modifier_mask(MASK_CAPS_LOCK);		}
+	else if (kbhook->vkCode == VK_SCROLL)	{ unset_modifier_mask(MASK_SCROLL_LOCK);	}
 
-    logger(LOG_LEVEL_INFO, "%s [%u]: Key %#X released. (%#X)\n",
-            __FUNCTION__, __LINE__, event.data.keyboard.keycode, event.data.keyboard.rawcode);
+	// Populate key pressed event.
+	event.time = kbhook->time;
+	event.reserved = 0x00;
 
-    // Fire key released event.
-    dispatch_event(&event);
+	event.type = EVENT_KEY_RELEASED;
+	event.mask = get_modifiers();
+
+	event.data.keyboard.keycode = keycode_to_scancode(kbhook->vkCode, kbhook->flags);
+	event.data.keyboard.rawcode = kbhook->vkCode;
+	event.data.keyboard.keychar = CHAR_UNDEFINED;
+
+	logger(LOG_LEVEL_INFO,	"%s [%u]: Key %#X released. (%#X)\n",
+			__FUNCTION__, __LINE__, event.data.keyboard.keycode, event.data.keyboard.rawcode);
+
+	// Fire key released event.
+	dispatch_event(&event);
 }
 
 LRESULT CALLBACK keyboard_hook_event_proc(int nCode, WPARAM wParam, LPARAM lParam) {
