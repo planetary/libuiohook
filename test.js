@@ -17,14 +17,12 @@ hook.on("keypress", function(e) {
     console.log("keypress => ", e);
 });
 
-hook.on("foreground_changed_location", function(e) {
+hook.on("foreground_changed", function(e) {
     console.log("foreground window changed location => ", e);
+
+    setTimeout(() => {
+        hook.stop();
+        hook.start();
+    }, 500);
 });
-
-setTimeout(() => {
-
-    hook.stop();
-
-}, 10000)
-
 
