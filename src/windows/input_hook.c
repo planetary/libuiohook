@@ -679,7 +679,7 @@ char * get_application_name(HWND windowHandle) {
 void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
 
 	DWORD window_thread_id = 0;
-	HRESULT hr;
+	HRESULT hr = 0;
 	char *appName = "";
 
 	switch (event) {
@@ -764,13 +764,10 @@ UIOHOOK_API int hook_run() {
 		if (win_event_hhook == NULL) {
 			logger(LOG_LEVEL_WARN,	"%s [%u]: SetWinEventHook() failed!\n",
 					__FUNCTION__, __LINE__);
-			printf("SetWinEventHook() failed \n");
 		}
 
 		logger(LOG_LEVEL_DEBUG,	"%s [%u]: SetWindowsHookEx() successful.\n",
 				__FUNCTION__, __LINE__);
-
-		printf("SetWindowsHookEx() succeed \n");
 
 		// Check and setup modifiers.
 		initialize_modifiers();
