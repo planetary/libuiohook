@@ -23,6 +23,7 @@
 #include <inttypes.h>
 #include <uiohook.h>
 #include <windows.h>
+#include <dwmapi.h>
 
 #include "input_helper.h"
 #include "logger.h"
@@ -643,6 +644,8 @@ void populate_win_event_with_window_bounds(HWND window) {
 	RECT rect;
 	HRESULT hr = GetWindowRect(window, &rect);
 
+	DwmGetWindowAttribute(window, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(RECT));
+
 	if (FAILED(hr)) {
 		window_event.data.window.x = 0;
 		window_event.data.window.y = 0;
@@ -688,7 +691,8 @@ void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LO
 	char *appName = "";
 
 	switch (event) {
-		case EVENT_OBJECT_LOCATIONCHANGE:
+		case EVENT_SYSTEM_MOVESIZESTART:
+		case EVENT_SYSTEM_MOVESIZEEND:
 			if (idObject != OBJID_WINDOW)
 				break;
 
@@ -696,7 +700,7 @@ void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LO
 				break;
 
 			if (hWnd == GetForegroundWindow()) {
-				window_event.type = EVENT_FOREGROUND_LOCATION_CHANGED;
+				window_event.type = event == EVENT_SYSTEM_MOVESIZESTART ? EVENT_MOVESIZESTART : EVENT_MOVESIZEEND;
 				window_event.time = dwmsEventTime;
 				window_event.reserved = 0x00;
 
@@ -758,7 +762,7 @@ UIOHOOK_API int hook_run() {
 	keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
 	mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
 	win_event_hhook = SetWinEventHook(
-			EVENT_SYSTEM_FOREGROUND, EVENT_OBJECT_LOCATIONCHANGE, 
+			EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_MOVESIZEEND, 
 			NULL, 
 			win_hook_event_proc, 
 			0, 0, 

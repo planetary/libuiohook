@@ -82,6 +82,7 @@
                         'libraries': [
                         'Oleacc',
                         "UIAutomationCore",
+                        "Dwmapi",
                         
                         "comsuppw"
                         ]

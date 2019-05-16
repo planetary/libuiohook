@@ -12,6 +12,8 @@ export enum Events {
 
     foreground_changed = "foreground_changed",
     foreground_changed_location = "foreground_changed_location",
+    window_move_size_start = "window_move_size_start",
+    window_move_size_end = "window_move_size_end",
 }
 
 export enum KeyModifiersMasks {

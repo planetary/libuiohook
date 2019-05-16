@@ -140,7 +140,7 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 		v8::Local<v8::Value> argv[] = { obj };
 
 		callback->Call(1, argv, &resource);
-	} else if (data->type >= EVENT_FOREGROUND_CHANGED && data->type <= EVENT_FOREGROUND_LOCATION_CHANGED) {
+	} else if (data->type >= EVENT_FOREGROUND_CHANGED && data->type <= EVENT_MOVESIZEEND) {
 
 		v8::Local<v8::Object> bounds = Nan::New<v8::Object>();
 
