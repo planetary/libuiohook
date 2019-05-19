@@ -28,6 +28,8 @@ function initEvents() {
     EVENTS.set(13, Events.foreground_changed_location);
     EVENTS.set(14, Events.window_move_size_start);
     EVENTS.set(15, Events.window_move_size_end);
+    EVENTS.set(16, Events.window_minimized);
+    EVENTS.set(17, Events.window_restored);
 }
 
 
@@ -87,7 +89,7 @@ export class IOHook extends EventEmitter {
             mask: nativeEvent.mask,
         };
 
-        if (nativeEvent.type >= 12 && nativeEvent.type <= 15 ) { // 12-13 - foreground window events
+        if (nativeEvent.type >= 12 && nativeEvent.type <= 17 ) { // 12-17 - foreground window events
             event.bounds = nativeEvent.bounds;
             event.applicationName = nativeEvent.applicationName;
         }

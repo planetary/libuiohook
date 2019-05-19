@@ -45,6 +45,8 @@ declare namespace LibUIOHookNode {
         foreground_changed_location = "foreground_changed_location",
         window_move_size_start = "window_move_size_start",
         window_move_size_end = "window_move_size_end",
+        window_minimized = "window_minimized",
+        window_restored = "window_restored",
     }
 
     export interface INativeEventMouse {

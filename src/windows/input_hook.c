@@ -690,20 +690,38 @@ void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LO
 	HRESULT hr = 0;
 	char *appName = "";
 
+	int8_t eventType = 0;
+
+	switch(event) {
+		case EVENT_SYSTEM_MOVESIZESTART:
+			eventType = EVENT_MOVESIZESTART; break;
+		case EVENT_SYSTEM_MOVESIZEEND:
+			eventType = EVENT_MOVESIZEEND; break;
+		case EVENT_SYSTEM_MINIMIZESTART:
+			eventType = EVENT_WINDOW_MINIMIZED; break;
+		case EVENT_SYSTEM_MINIMIZEEND:
+			eventType = EVENT_WINDOW_RESTORED; break;
+		case EVENT_SYSTEM_FOREGROUND:
+			eventType = EVENT_FOREGROUND_CHANGED; break;
+		default:
+			break;
+	}
+
+	window_event.type = eventType;
+	window_event.time = dwmsEventTime;
+	window_event.reserved = 0x00;
+
 	switch (event) {
 		case EVENT_SYSTEM_MOVESIZESTART:
 		case EVENT_SYSTEM_MOVESIZEEND:
-			if (idObject != OBJID_WINDOW)
+		case EVENT_SYSTEM_MINIMIZEEND:
+			if (idObject != OBJID_WINDOW) 
 				break;
 
-			if (hWnd == NULL)
+			if (hWnd == NULL) 
 				break;
 
 			if (hWnd == GetForegroundWindow()) {
-				window_event.type = event == EVENT_SYSTEM_MOVESIZESTART ? EVENT_MOVESIZESTART : EVENT_MOVESIZEEND;
-				window_event.time = dwmsEventTime;
-				window_event.reserved = 0x00;
-
 				populate_win_event_with_window_bounds(hWnd);
 				window_event.data.window.applicationName = get_application_name(hWnd);
 				
@@ -711,13 +729,11 @@ void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LO
 			}
 
 			break;
+		// EVENT_SYSTEM_MINIMIZESTART returns window handle that is not equal to ForegroundWindow
+		case EVENT_SYSTEM_MINIMIZESTART:
 		case EVENT_SYSTEM_FOREGROUND:
 			if (hWnd == NULL) 
 				break;
-
-			window_event.type = EVENT_FOREGROUND_CHANGED;
-			window_event.time = dwmsEventTime;
-			window_event.reserved = 0x00;
 
 			populate_win_event_with_window_bounds(hWnd);
 			window_event.data.window.applicationName = get_application_name(hWnd);
@@ -762,7 +778,7 @@ UIOHOOK_API int hook_run() {
 	keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
 	mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
 	win_event_hhook = SetWinEventHook(
-			EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_MOVESIZEEND, 
+			EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_MINIMIZEEND, 
 			NULL, 
 			win_hook_event_proc, 
 			0, 0, 
