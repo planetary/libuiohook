@@ -1,6 +1,6 @@
 {
   "name": "libuiohook-node",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "NodeJS bindings for libuiohook",
   "main": "index.js",
   "directories": {
