@@ -86,7 +86,10 @@ static inline void set_modifier_mask(unsigned short int mask) {
 
 // Unset the native modifier mask for future events.
 static inline void unset_modifier_mask(unsigned short int mask) {
-    current_modifiers ^= mask;
+	if ((current_modifiers & mask) == 0) {
+		return;
+	}
+	current_modifiers ^= mask;
 }
 
 // Get the current native modifier mask state.
