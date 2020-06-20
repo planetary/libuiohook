@@ -51,12 +51,11 @@
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
+/* Set minimum OS X version to 10.5 */
+#undef MAC_OS_X_VERSION_MIN_REQUIRED
 
 /* Name of package */
 #undef PACKAGE
@@ -95,14 +94,35 @@
 /* Enable Debug Output */
 #undef USE_DEBUG
 
+/* Enable generic Linux input driver */
+#undef USE_EVDEV
+
 /* Enable IOKit framework */
 #undef USE_IOKIT
+
+/* Enable objective-c */
+#undef USE_OBJC
+
+/* Enable Copyright Suppression */
+#undef USE_QUIET
+
+/* Enable support for weakly-linked symbols */
+#undef USE_WEAK_IMPORT
 
 /* Enable XFree86-Misc X Extension */
 #undef USE_XF86MISC
 
-/* Enable X Keyboard Extension */
-#undef USE_XKB
+/* Enable Xinerama Extension */
+#undef USE_XINERAMA
+
+/* Enable XKB Common Extension */
+#undef USE_XKBCOMMON
+
+/* Enable XKB File Extension */
+#undef USE_XKBFILE
+
+/* Enable XRandR Extension */
+#undef USE_XRANDR
 
 /* Enable XRecord Asynchronous API */
 #undef USE_XRECORD_ASYNC
@@ -116,8 +136,17 @@
 /* Version number of package */
 #undef VERSION
 
+/* Define for Solaris 2.5.1 so the uint64_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#undef _UINT64_T
+
 /* Set minimum Windows version to Windows 2000 */
 #undef _WIN32_WINNT
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
+
+/* Define to the type of an unsigned integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#undef uint64_t

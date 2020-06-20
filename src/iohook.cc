@@ -12,17 +12,17 @@
 
 #if defined(USE_X11)
 
-#include "xdisplay.h" 
-#include <stdlib.h> 
-#include <unistd.h> 
-#include <locale.h> 
-#include <X11/Xlib.h> 
-#include <X11/Xatom.h> 
-#include <X11/cursorfont.h> 
-#include <X11/Xlib.h> 
-#include <X11/XKBlib.h> 
-#include <X11/Xutil.h> 
-#include "linux/input_helper.h" 
+#include "xdisplay.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <locale.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/cursorfont.h>
+#include <X11/Xlib.h>
+#include <X11/XKBlib.h>
+#include <X11/Xutil.h>
+#include "linux/input_helper.h"
 
 #endif
 
@@ -50,13 +50,13 @@
 
 using namespace v8;
 using Callback = Nan::Callback;
-static bool sIsRuning=false; 
+static bool sIsRuning = false;
 
-static HookProcessWorker* sIOHook = nullptr;
+static HookProcessWorker *sIOHook = nullptr;
 
-static void dispatch_proc(uiohook_event * const event)
+static void dispatch_proc(uiohook_event *const event)
 {
-	if (sIOHook != nullptr && sIOHook->fHookExecution!=nullptr)
+	if (sIOHook != nullptr && sIOHook->fHookExecution != nullptr)
 	{
 		sIOHook->fHookExecution->Send(event, sizeof(uiohook_event));
 	}
@@ -67,15 +67,12 @@ static bool logger_proc(unsigned int level, const char *format, ...)
 	return true;
 }
 
-
-HookProcessWorker::HookProcessWorker(Nan::Callback * callback) :
-Nan::AsyncProgressWorkerBase<uiohook_event>(callback),
-fHookExecution(nullptr)
+HookProcessWorker::HookProcessWorker(Nan::Callback *callback) : Nan::AsyncProgressWorkerBase<uiohook_event>(callback),
+																fHookExecution(nullptr)
 {
-	
 }
 
-void HookProcessWorker::Execute(const Nan::AsyncProgressWorkerBase<uiohook_event>::ExecutionProgress& progress)
+void HookProcessWorker::Execute(const Nan::AsyncProgressWorkerBase<uiohook_event>::ExecutionProgress &progress)
 {
 	hook_set_logger_proc(&logger_proc);
 	hook_set_dispatch_proc(&dispatch_proc);
@@ -94,12 +91,13 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 	HandleScope scope(Isolate::GetCurrent());
 	v8::Local<v8::Object> obj = Nan::New<v8::Object>();
 
-    if (data == NULL || data == nullptr || (data->type == NULL) || data->type < 0) { 
-        return; 
-    }
+	if (data == NULL || data == nullptr || (data->type == NULL) || data->type < 0)
+	{
+		return;
+	}
 
 	Nan::AsyncResource resource("libuiohook-node:addon.HandleProgressCallback");
-	
+
 	Nan::Set(obj, Nan::New("type").ToLocalChecked(), Nan::New((uint16_t)data->type));
 	Nan::Set(obj, Nan::New("mask").ToLocalChecked(), Nan::New((uint16_t)data->mask));
 	if ((data->type >= EVENT_MOUSE_CLICKED) && (data->type < EVENT_MOUSE_WHEEL))
@@ -111,7 +109,7 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 		Nan::Set(mouse, Nan::New("y").ToLocalChecked(), Nan::New((int)data->data.mouse.y));
 
 		Nan::Set(obj, Nan::New("mouse").ToLocalChecked(), mouse);
-		v8::Local<v8::Value> argv[] = { obj };
+		v8::Local<v8::Value> argv[] = {obj};
 		callback->Call(1, argv, &resource);
 	}
 	else if ((data->type >= EVENT_KEY_TYPED) && (data->type <= EVENT_KEY_RELEASED))
@@ -122,7 +120,7 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 		Nan::Set(keyboard, Nan::New("keycode").ToLocalChecked(), Nan::New((int)data->data.keyboard.keycode));
 		Nan::Set(keyboard, Nan::New("rawcode").ToLocalChecked(), Nan::New((int)data->data.keyboard.rawcode));
 		Nan::Set(obj, Nan::New("keyboard").ToLocalChecked(), keyboard);
-		v8::Local<v8::Value> argv[] = { obj };
+		v8::Local<v8::Value> argv[] = {obj};
 		callback->Call(1, argv, &resource);
 	}
 	else if (data->type == EVENT_MOUSE_WHEEL)
@@ -137,54 +135,36 @@ void HookProcessWorker::HandleProgressCallback(const uiohook_event *data, size_t
 		Nan::Set(wheel, Nan::New("y").ToLocalChecked(), Nan::New((int)data->data.wheel.y));
 
 		Nan::Set(obj, Nan::New("wheel").ToLocalChecked(), wheel);
-		v8::Local<v8::Value> argv[] = { obj };
+		v8::Local<v8::Value> argv[] = {obj};
 
-		callback->Call(1, argv, &resource);
-	} else if (data->type >= EVENT_FOREGROUND_CHANGED && data->type <= EVENT_WINDOW_RESTORED) {
-
-		v8::Local<v8::Object> bounds = Nan::New<v8::Object>();
-
-		Nan::Set(bounds, Nan::New("x").ToLocalChecked(), Nan::New((int)data->data.window.x));
-		Nan::Set(bounds, Nan::New("y").ToLocalChecked(), Nan::New((int)data->data.window.y));
-		Nan::Set(bounds, Nan::New("width").ToLocalChecked(), Nan::New((int)data->data.window.width));
-		Nan::Set(bounds, Nan::New("height").ToLocalChecked(), Nan::New((int)data->data.window.height));
-
-		Nan::Set(obj, Nan::New("bounds").ToLocalChecked(), bounds);
-
-		Nan::Set(obj, Nan::New("applicationName").ToLocalChecked(), Nan::New(data->data.window.applicationName).ToLocalChecked());
-		if (data->data.window.applicationName != NULL && data->data.window.applicationName != "") {
-			free(data->data.window.applicationName);
-		}
-
-		v8::Local<v8::Value> argv[] = { obj };
 		callback->Call(1, argv, &resource);
 	}
-	
 }
 
+NAN_METHOD(StartHook)
+{
 
-NAN_METHOD(StartHook) {
-
-    //allow one single execution
-    if(sIsRuning==false)
-    {
-        if(info.Length() >0)
-        {
+	//allow one single execution
+	if (sIsRuning == false)
+	{
+		if (info.Length() > 0)
+		{
 			if (info[0]->IsFunction())
 			{
-				Callback* callback = new Callback(info[0].As<Function>());
+				Callback *callback = new Callback(info[0].As<Function>());
 				sIOHook = new HookProcessWorker(callback);
 				Nan::AsyncQueueWorker(sIOHook);
 				sIsRuning = true;
 			}
-        }
-    }
+		}
+	}
 }
 
-NAN_METHOD(StopHook) {
+NAN_METHOD(StopHook)
+{
 
 	//allow one single execution
-	if ((sIsRuning == true) && (sIOHook !=nullptr))
+	if ((sIsRuning == true) && (sIOHook != nullptr))
 	{
 		sIOHook->Stop();
 	}
@@ -193,11 +173,11 @@ NAN_METHOD(StopHook) {
 NAN_MODULE_INIT(InitAll)
 {
 
-    Nan::Set(target, Nan::New<String>("startHook").ToLocalChecked(),
-             Nan::GetFunction(Nan::New<FunctionTemplate>(StartHook)).ToLocalChecked());
+	Nan::Set(target, Nan::New<String>("startHook").ToLocalChecked(),
+			 Nan::GetFunction(Nan::New<FunctionTemplate>(StartHook)).ToLocalChecked());
 
-    Nan::Set(target, Nan::New<String>("stopHook").ToLocalChecked(),
-             Nan::GetFunction(Nan::New<FunctionTemplate>(StopHook)).ToLocalChecked());
+	Nan::Set(target, Nan::New<String>("stopHook").ToLocalChecked(),
+			 Nan::GetFunction(Nan::New<FunctionTemplate>(StopHook)).ToLocalChecked());
 }
 
 NODE_MODULE(iohookjs, InitAll)

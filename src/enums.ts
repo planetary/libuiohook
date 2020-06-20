@@ -9,13 +9,6 @@ export enum Events {
     mousemove = "mousemove",
     mousedrag = "mousedrag",
     mousewheel = "mousewheel",
-
-    foreground_changed = "foreground_changed",
-    foreground_changed_location = "foreground_changed_location",
-    window_move_size_start = "window_move_size_start",
-    window_move_size_end = "window_move_size_end",
-    window_minimized = "window_minimized",
-    window_restored = "window_restored",
 }
 
 export enum KeyModifiersMasks {

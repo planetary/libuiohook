@@ -24,12 +24,6 @@ function initEvents() {
     EVENTS.set(9, Events.mousemove);
     EVENTS.set(10, Events.mousedrag);
     EVENTS.set(11, Events.mousewheel);
-    EVENTS.set(12, Events.foreground_changed);
-    EVENTS.set(13, Events.foreground_changed_location);
-    EVENTS.set(14, Events.window_move_size_start);
-    EVENTS.set(15, Events.window_move_size_end);
-    EVENTS.set(16, Events.window_minimized);
-    EVENTS.set(17, Events.window_restored);
 }
 
 
@@ -89,14 +83,7 @@ export class IOHook extends EventEmitter {
             mask: nativeEvent.mask,
         };
 
-        if (nativeEvent.type >= 12 && nativeEvent.type <= 17 ) { // 12-17 - foreground window events
-            event.bounds = nativeEvent.bounds;
-            event.applicationName = nativeEvent.applicationName;
-        }
-        else {
-            event = Object.assign({}, event, nativeEvent.mouse || nativeEvent.keyboard || nativeEvent.wheel);
-        }
-
+        event = Object.assign({}, event, nativeEvent.mouse || nativeEvent.keyboard || nativeEvent.wheel);
 
         this._decorateEventWithModifiers(event);
 

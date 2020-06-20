@@ -31,7 +31,6 @@
 // Thread and hook handles.
 static DWORD hook_thread_id = 0;
 static HHOOK keyboard_event_hhook = NULL, mouse_event_hhook = NULL;
-static HWINEVENTHOOK win_event_hhook = NULL;
 
 // The handle to the DLL module pulled in DllMain on DLL_PROCESS_ATTACH.
 extern HINSTANCE hInst;
@@ -158,12 +157,6 @@ static unsigned short int get_scroll_wheel_amount() {
 }
 
 void unregister_running_hooks() {
-
-	// Stop the event hook and any timer still running.
-	if (win_event_hhook != NULL) {
-		UnhookWinEvent(win_event_hhook);
-		win_event_hhook = NULL;
-	}
 
 	// Destroy the native hooks.
 	if (keyboard_event_hhook != NULL) {
@@ -685,73 +678,6 @@ char * get_application_name(HWND windowHandle) {
 
 }
 
-
-// Callback function that handles events.
-void CALLBACK win_hook_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hWnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
-
-	DWORD window_thread_id = 0;
-	HRESULT hr = 0;
-	char *appName = "";
-
-	int8_t eventType = 0;
-
-	switch(event) {
-		case EVENT_SYSTEM_MOVESIZESTART:
-			eventType = EVENT_MOVESIZESTART; break;
-		case EVENT_SYSTEM_MOVESIZEEND:
-			eventType = EVENT_MOVESIZEEND; break;
-		case EVENT_SYSTEM_MINIMIZESTART:
-			eventType = EVENT_WINDOW_MINIMIZED; break;
-		case EVENT_SYSTEM_MINIMIZEEND:
-			eventType = EVENT_WINDOW_RESTORED; break;
-		case EVENT_SYSTEM_FOREGROUND:
-			eventType = EVENT_FOREGROUND_CHANGED; break;
-		default:
-			break;
-	}
-
-	window_event.type = eventType;
-	window_event.time = dwmsEventTime;
-	window_event.reserved = 0x00;
-
-	switch (event) {
-		case EVENT_SYSTEM_MOVESIZESTART:
-		case EVENT_SYSTEM_MOVESIZEEND:
-		case EVENT_SYSTEM_MINIMIZEEND:
-			if (idObject != OBJID_WINDOW) 
-				break;
-
-			if (hWnd == NULL) 
-				break;
-
-			if (hWnd == GetForegroundWindow()) {
-				populate_win_event_with_window_bounds(hWnd);
-				window_event.data.window.applicationName = get_application_name(hWnd);
-				
-				dispatch_event(&window_event);
-			}
-
-			break;
-		// EVENT_SYSTEM_MINIMIZESTART returns window handle that is not equal to ForegroundWindow
-		case EVENT_SYSTEM_MINIMIZESTART:
-		case EVENT_SYSTEM_FOREGROUND:
-			if (hWnd == NULL) 
-				break;
-
-			populate_win_event_with_window_bounds(hWnd);
-			window_event.data.window.applicationName = get_application_name(hWnd);
-
-			dispatch_event(&window_event);
-			break;
-			
-		default:
-			logger(LOG_LEVEL_INFO, "%s [%u]: Unhandled Windows window event: %#X.\n",
-					__FUNCTION__, __LINE__, event);
-	}
-}
-
-
-
 UIOHOOK_API int hook_run() {
     int status = UIOHOOK_FAILURE;
 
@@ -780,20 +706,9 @@ UIOHOOK_API int hook_run() {
 	// Create the native hooks.
 	keyboard_event_hhook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_event_proc, hInst, 0);
 	mouse_event_hhook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook_event_proc, hInst, 0);
-	win_event_hhook = SetWinEventHook(
-			EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_MINIMIZEEND, 
-			NULL, 
-			win_hook_event_proc, 
-			0, 0, 
-			WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
 
 	// If we did not encounter a problem, start processing events.
 	if (keyboard_event_hhook != NULL && mouse_event_hhook != NULL) {
-		if (win_event_hhook == NULL) {
-			logger(LOG_LEVEL_WARN,	"%s [%u]: SetWinEventHook() failed!\n",
-					__FUNCTION__, __LINE__);
-		}
-
 		logger(LOG_LEVEL_DEBUG,	"%s [%u]: SetWindowsHookEx() successful.\n",
 				__FUNCTION__, __LINE__);
 
