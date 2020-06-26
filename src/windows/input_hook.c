@@ -635,28 +635,6 @@ LRESULT CALLBACK mouse_hook_event_proc(int nCode, WPARAM wParam, LPARAM lParam) 
     return hook_result;
 }
 
-void populate_win_event_with_window_bounds(HWND window) {
-
-	RECT rect;
-	HRESULT hr = GetWindowRect(window, &rect);
-
-	DwmGetWindowAttribute(window, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(RECT));
-
-	if (FAILED(hr)) {
-		window_event.data.window.x = 0;
-		window_event.data.window.y = 0;
-		window_event.data.window.width = 0;
-		window_event.data.window.height = 0;
-	}
-	else {
-		window_event.data.window.x = rect.left;
-		window_event.data.window.y = rect.top;
-		window_event.data.window.width = rect.right - rect.left;
-		window_event.data.window.height = rect.bottom - rect.top;
-	}
-
-}
-
 char * get_app_name_by_process_id(DWORD dwProcId) {
 	char * appName = malloc(sizeof(char) * MAX_PATH);
 
